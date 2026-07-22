@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "drawflow": "^0.0.60",
-    "lit": "^3.3.3"
-  }
-}
