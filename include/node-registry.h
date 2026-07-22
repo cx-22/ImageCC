@@ -4,14 +4,9 @@
 #include <QtNodes/NodeDelegateModelRegistry>
 
 #include "node-widgets.h"
+#include <map>
 
 using namespace QtNodes;
 
-std::shared_ptr<NodeDelegateModelRegistry> build_reg(){
-    auto reg = std::make_shared<NodeDelegateModelRegistry>();
-
-    reg->registerModel<InputNode>();
-    reg->registerModel<OutputNode>();
-
-    return reg;
-}
+std::shared_ptr<NodeDelegateModelRegistry> build_reg();
+extern std::map<std::string, int> g_name_func_map;

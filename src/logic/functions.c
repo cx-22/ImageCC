@@ -54,7 +54,8 @@ void add(
     int cols = input->cols;
     int c = input->channels;
 
-    uint8_t val = *(uint8_t*)params[0];
+    uint8_t val = (params[0] == NULL) ? 100 : *(uint8_t*)params[0];
+
     int x, y, z, idx, total;
     printf("adding with %d\n", val);
     for (x = 0; x < rows; x++)

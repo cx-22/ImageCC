@@ -16,6 +16,12 @@
 #define DECOM   0
 #define COM     1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef void (*NodeCompleteCallback)(struct Node* node);
+
 // A node will own its own output images, but reference its input
 struct Node{
     struct Node** input_nodes;
@@ -26,13 +32,19 @@ struct Node{
     struct function* func;
     //void** args; // order: input images list, output images list, parameters
     uint8_t status;
+    NodeCompleteCallback on_complete;
+    void* userdata;
 };
 
 struct NodeEntry{
-    int nid;
+    uint16_t nid;
     int type;
     struct Node* node;
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 struct Image{
     uint8_t status;

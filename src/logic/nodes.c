@@ -32,7 +32,7 @@ void clearNodes(){
 
 
 void setImageInput(
-    int nid,
+    uint16_t nid,
     uint8_t* buffer,
     int width,
     int height,
@@ -62,7 +62,7 @@ void setImageInput(
 
 
 
-struct Node* createNode(int nid, int type){
+struct Node* createNode(uint16_t nid, int type){
     struct Node* node = malloc(sizeof(struct Node));
     struct NodeEntry* ne = malloc(sizeof(struct NodeEntry));
     ne->nid = nid;
@@ -140,38 +140,22 @@ struct Node* createNode(int nid, int type){
 // Should have at least defaults for params
 
 void applyFunc(struct Node* node){
-    //printf("hi apply\n");
-    /*
-        //printf("testing:%p\n", node);
-        uint8_t i, index;
-        index = i = 0;
-        for(i = 0; i < node->func->n_inputs; i++){
-            //node->args[index] = (void*)node->inputs[i]->args[0];
-            printf("checking this input:%p\n", node->inputs[i]);
-            printf("and arg:%p\n", (void*)node->inputs[i]->args[0]);
-            printf("1- index:%d  i:%d\n", index, i);
-            index++;
-        }
-        
-        i = 0;
-        for(i = 0; i < node->func->n_outputs; i++){
-            node->args[index] = (void*)node->outputs[i]->args;
-            printf("2- index:%d  i:%d\n", index, i);
-            index++;
-        }
 
-        for(i = 0; i < node->func->n_args; i++){
-            printf("args%d :%p\n", i, (struct Image*)node->args[i]);
-        }
-    */
+    if (node->func->op == NULL){
+        return;
+    }
 
     node->func->op(node->input_images,
                     node->output_images,
                     node->params);
+
+    if (node->on_complete != NULL) {
+        node->on_complete(node);
+    }
 }
 
 
-void addParam(int nid, void* arg, int param_index){
+void addParam(uint16_t nid, void* arg, int param_index){
     struct Node* node;
     struct NodeEntry* ne;
     int i;
@@ -192,7 +176,7 @@ void addParam(int nid, void* arg, int param_index){
 
 
 
-void connectNodes(int input_nid, int output_nid, int index_start, int index_end){
+void connectNodes(uint16_t input_nid, uint16_t output_nid, int index_start, int index_end){
     struct Node* input_node = NULL;
     struct Node* output_node = NULL;
     struct NodeEntry* ne;
@@ -205,13 +189,13 @@ void connectNodes(int input_nid, int output_nid, int index_start, int index_end)
         if (input_node && output_node) break;
     }
 
-    printf("number of inputs %d\n", output_node->func->n_inputs);
+    //printf("number of inputs %d\n", output_node->func->n_inputs);
 
     input_node->output_nodes[index_start] = output_node;
     output_node->input_nodes[index_end] = input_node;
     output_node->input_images[index_end] = input_node->output_images[index_start];
 
-    printf("connect %p at node %d to %p with image %p\n", output_node, index_end, input_node, input_node->output_images[index_start]);
+    //printf("connect %p at node %d to %p with image %p\n", output_node, index_end, input_node, input_node->output_images[index_start]);
 
     if(input_node->status == ACTIVE){
         for(i = 0; i < output_node->func->n_inputs; i++){
@@ -220,11 +204,11 @@ void connectNodes(int input_nid, int output_nid, int index_start, int index_end)
                 return;
             }
         }
-        activateForward(output_node, -1);
+        activateForward(output_node, output_nid);
     }
 }
 
-void activateForward(struct Node* node, int nid){
+void activateForward(struct Node* node, uint16_t nid){
     int i;
     struct NodeEntry* ne;
     if (nid != -1){
@@ -237,13 +221,15 @@ void activateForward(struct Node* node, int nid){
         }
     }
 
+
     node->status = ACTIVE;
     applyFunc(node);
 
     uint8_t j;
     struct Node* next;
+
     for(i = 0; i < node->func->n_outputs; i++){
-        if(!node->output_nodes[i]) continue;
+        if(node->output_nodes[i] == NULL) continue;
         
 
         next = node->output_nodes[i];
@@ -262,7 +248,7 @@ void activateForward(struct Node* node, int nid){
 }
 
 
-void disconnectNodes(int input_nid, int output_nid, int index_start, int index_end){
+void disconnectNodes(uint16_t input_nid, uint16_t output_nid, int index_start, int index_end){
     struct Node* input_node = NULL;
     struct Node* output_node = NULL;
     struct NodeEntry* ne;
@@ -291,7 +277,7 @@ void disconnectNodes(int input_nid, int output_nid, int index_start, int index_e
 }
 
 
-void deactivateForward(struct Node* node, int nid){
+void deactivateForward(struct Node* node, uint16_t nid){
     int i;
     struct NodeEntry* ne;
     if (nid != -1){
@@ -326,7 +312,7 @@ void disconnectFromKill(struct Node* input_node, struct Node* output_node, int i
 }
 
 
-void killNode(struct Node* node, struct NodeEntry* ne, int nid, int save_num){
+void killNode(struct Node* node, struct NodeEntry* ne, uint16_t nid, int save_num){
     //printf("killing: %p\n", node);
     struct Node* node_prime;
     int i, j;

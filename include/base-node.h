@@ -1,11 +1,14 @@
 #pragma once
 #include <iostream>
+#include <vector>
 
 #include <QtCore/QObject>
 #include <QtWidgets/QLabel>
 
 #include <QtNodes/NodeDelegateModel>
 #include <QtNodes/NodeDelegateModelRegistry>
+
+#include "nodes.h"
 
 using QtNodes::NodeData;
 using QtNodes::NodeDataType;
@@ -33,17 +36,23 @@ public:
 
     void setInData(std::shared_ptr<NodeData> nodeData, PortIndex const port) override;
 
-    QWidget *embeddedWidget() override { return _label; }
+    QWidget *embeddedWidget() override;
 
     bool resizable() const override { return true; }
 
     QString caption() const override {return QString::fromStdString(title);}
     QString name() const override {return QString::fromStdString(title);}
+
+    std::vector<QLabel*> labels;
+    std::vector<QPixmap*> pixmaps;
+    std::vector<struct Image*> images;
+    struct Node* node;
+    std::shared_ptr<NodeData> nodeData;
+
+    void buildImages();
+    void update();
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
+    static void nodeFinished(struct Node* node);
 
-private:
-    QLabel *_label;
-    QPixmap _pixmap;
-    std::shared_ptr<NodeData> _nodeData;
 };
