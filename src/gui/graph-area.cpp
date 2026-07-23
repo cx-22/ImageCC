@@ -1,6 +1,5 @@
 #include "grapharea.h"
 #include "node-registry.h"
-#include "nodes.h"
 
 GraphArea::GraphArea(QWidget *parent){
     setAcceptDrops(true);
@@ -58,10 +57,6 @@ bool GraphArea::eventFilter(QObject* watched, QEvent* event)
 
             QString nodeName = dropEvent->mimeData()->text();
 
-            qDebug() << "my nod" << graphModel->_nextNodeId;
-
-
-            createNode(graphModel->_nextNodeId, g_name_func_map[nodeName.toStdString()]);
             auto id = graphModel->addNode(nodeName);
 
             QPoint viewPos = dropEvent->position().toPoint();
@@ -72,8 +67,6 @@ bool GraphArea::eventFilter(QObject* watched, QEvent* event)
                 QtNodes::NodeRole::Position,
                 scenePos
                 );
-
-            qDebug() << "qtn node:" << id;
 
             dropEvent->acceptProposedAction();
 

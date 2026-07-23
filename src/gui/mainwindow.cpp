@@ -1,5 +1,4 @@
 #include "mainwindow.h"
-#include "nodes.h"
 #include "functions.h"
 #include <QDebug>
 
@@ -7,11 +6,10 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     qDebug() << "MainWindow constructor";
-    buildNodeList();
     buildFuncs();
 
     qDebug() << "map input is:" << g_name_func_map["Input"];
-    qDebug() << "func size:" << cvector_size(func_list);
+    qDebug() << "func size:" << func_list.size();
     QWidget* main_widget = new QWidget(this);
     this->setCentralWidget(main_widget);
 
@@ -27,6 +25,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 MainWindow::~MainWindow(){
-    killList();
-    killFuncs();
+    //killList();
+    //killFuncs();
 }

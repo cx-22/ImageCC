@@ -1,6 +1,5 @@
 #include "graph-model.h"
 #include "base-node.h"
-#include "nodes.h"
 #include <QJsonArray>
 
 #include <stack>
@@ -66,16 +65,6 @@ NodeId GraphModel::addNode(QString const nodeType)
         NodeId newId = newNodeId();
 
         auto* node = dynamic_cast<BaseNode*>(model.get());
-
-        if (node)
-        {
-            node->nid = newId;
-            node->buildImages();
-        }
-        else
-        {
-            qDebug() << "Node is not a BaseNode";
-        }
 
         connect(model.get(),
                 &NodeDelegateModel::dataUpdated,
@@ -215,20 +204,6 @@ void GraphModel::addConnection(ConnectionId const connectionId)
                 connectionId.inPortIndex,
                 portDataToPropagate,
                 PortRole::Data);
-
-
-    qDebug()
-        << connectionId.outNodeId << "\n"
-        << connectionId.inNodeId << "\n"
-        << connectionId.outPortIndex << "\n"
-    << connectionId.inPortIndex << "\n";
-
-    connectNodes(
-        connectionId.outNodeId,
-        connectionId.inNodeId,
-        connectionId.outPortIndex,
-        connectionId.inPortIndex
-        );
 }
 
 void GraphModel::sendConnectionCreation(ConnectionId const connectionId)
@@ -546,13 +521,6 @@ bool GraphModel::deleteConnection(ConnectionId const connectionId)
     }
 
 
-    disconnectNodes(
-        connectionId.outNodeId,
-        connectionId.inNodeId,
-        connectionId.outPortIndex,
-        connectionId.inPortIndex
-        );
-
     return disconnected;
 }
 
@@ -568,9 +536,6 @@ bool GraphModel::deleteNode(NodeId const nodeId)
     _labels.erase(nodeId);
     _labelsVisible.erase(nodeId);
     _models.erase(nodeId);
-
-    killNode(NULL, NULL, nodeId, 0);
-    //_nextNodeId--;
 
     Q_EMIT nodeDeleted(nodeId);
 

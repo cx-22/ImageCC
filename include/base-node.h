@@ -4,11 +4,12 @@
 
 #include <QtCore/QObject>
 #include <QtWidgets/QLabel>
+#include <QVBoxLayout>
 
 #include <QtNodes/NodeDelegateModel>
 #include <QtNodes/NodeDelegateModelRegistry>
 
-#include "nodes.h"
+#include "types.h"
 
 using QtNodes::NodeData;
 using QtNodes::NodeDataType;
@@ -21,9 +22,10 @@ class BaseNode : public NodeDelegateModel
     Q_OBJECT
 public:
     BaseNode();
+    //~BaseNode();
 
     int type;
-    uint nid;
+    //uint nid;
     std::string title;
 
     virtual QString modelName() const { return QString("Resulting Image"); }
@@ -43,16 +45,23 @@ public:
     QString caption() const override {return QString::fromStdString(title);}
     QString name() const override {return QString::fromStdString(title);}
 
+
     std::vector<QLabel*> labels;
     std::vector<QPixmap*> pixmaps;
-    std::vector<struct Image*> images;
-    struct Node* node;
     std::shared_ptr<NodeData> nodeData;
 
-    void buildImages();
+    uchar status;
+    std::vector<struct Image*> input_images;
+    std::vector<struct Image*> output_images;
+    std::vector<void*> params;
+
+    struct function* func;
+
+    QWidget* main_widget;
+    QVBoxLayout* main_layout;
+
+    void initialize();
     void update();
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
-    static void nodeFinished(struct Node* node);
-
 };

@@ -20,8 +20,8 @@ set(Qt6_DIR "C:/Qt/6.9.0/msvc2022_64/lib/cmake/Qt6")
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core Gui)
 
 
-file(GLOB_RECURSE CPP_SRC src/gui/*.cpp)
-file(GLOB_RECURSE C_SRC src/logic/*.c)
+file(GLOB_RECURSE CPP_SRC src/gui/*.cpp src/gui/*.c)
+file(GLOB_RECURSE C_SRC src/logic/*.cpp src/logic/*.c)
 file(GLOB_RECURSE HEADERS  include/*.h include/*.hpp)
 
 add_executable(ImageCC ${CPP_SRC} ${C_SRC} ${HEADERS})
