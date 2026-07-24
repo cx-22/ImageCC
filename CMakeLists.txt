@@ -16,8 +16,8 @@ if(MSVC)
     )
 endif()
 
-#set(MyQtDir "C:/Qt/6.9.0")
-set(MyQtDir "C:/Qt/6.8.1")
+set(MyQtDir "C:/Qt/6.9.0")
+#set(MyQtDir "C:/Qt/6.8.1")
 
 set(Qt6_DIR "${MyQtDir}/msvc2022_64/lib/cmake/Qt6")
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core Gui)

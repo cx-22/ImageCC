@@ -92,4 +92,6 @@ void SideBar::buildCats(){
     addNode("simple", "Quantize RGB");
     addNode("simple", "Grayscale");
     addNode("simple", "HSV Split");
+    addNode("simple", "Binary Threshold");
+    addNode("simple", "RGB Mask");
 }

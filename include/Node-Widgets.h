@@ -118,7 +118,7 @@ public:
         type = 4;
         title = "Quantize RGB";
         slider = new QSlider(Qt::Horizontal);
-        slider->setRange(0, 255);
+        slider->setRange(1, 256);
         slider->setValue(100);
         slider->connect(slider, &QSlider::valueChanged, [this](int value) {
             val = static_cast<uchar>(value);
@@ -159,12 +159,44 @@ public:
     }
 };
 
-
 class HSVSplitNode : public BaseNode {
 public:
     HSVSplitNode() {
         type = 6;
         title = "HSV Split";
+        initialize();
+    }
+};
+
+class BinaryThresNode : public BaseNode {
+public:
+    QSlider* slider;
+    uchar val;
+    BinaryThresNode() {
+        type = 7;
+        title = "Binary Threshold";
+        val = 100;
+        slider = new QSlider(Qt::Horizontal);
+        slider->setRange(0, 255);
+        slider->setValue(100);
+        slider->connect(slider, &QSlider::valueChanged, [this](int value) {
+            val = static_cast<uchar>(value);
+            params[0] = static_cast<void*>(&val);
+            update();
+            });
+        main_layout->addWidget(slider);
+        initialize();
+    }
+    ~BinaryThresNode() {
+        delete slider;
+    }
+};
+
+class RGBMaskNode : public BaseNode {
+public:
+    RGBMaskNode() {
+        type = 8;
+        title = "RGB Mask";
         initialize();
     }
 };

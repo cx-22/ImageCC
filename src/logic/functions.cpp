@@ -36,6 +36,8 @@ void buildFuncs(){
 
 	// 6 - 10
     func_list.emplace_back(function{ HSVSplit, 1, 3, 0 });
+    func_list.emplace_back(function{ BinaryThres, 1, 1, 1 });
+    func_list.emplace_back(function{ RGBMask, 2, 1, 0 });
 }
 
 void killFuncs(){
@@ -50,7 +52,7 @@ void arithmetic(
     cv::Mat* input = input_images[0];
     cv::Mat* output = output_images[0];
 
-    *output = input->clone();
+    input->copyTo(*output);
 
     int rows = input->rows;
     int cols = input->cols;
@@ -123,13 +125,18 @@ void add2Images(
     cv::Mat* input2 = input_images[1];
     cv::Mat* output = output_images[0];
 
+    if (input1->size() != input2->size()) {
+        std::cerr << "Error: Input images must have the same size." << std::endl;
+        return;
+	}
+
     float alpha = (params[0] == NULL) ? 0.5 : *(float*)params[0];
-    if (alpha == 0) {
+    if (alpha == 1) {
         *output = input1->clone();
-    } else if (alpha == 1){
+        return;
+    } else if (alpha == 0){
         *output = input2->clone();
-    } else {
-        *output = input1->clone();
+        return;
     }
 
     cv::addWeighted(*input1, alpha, *input2, 1 - alpha, 0, *output);
@@ -189,9 +196,7 @@ void quantizeRGB(
     cv::Mat* input = input_images[0];
     cv::Mat* output = output_images[0];
 
-    *output = input->clone();
-    uchar* buf_in;
-    uchar* buf_out;
+    input->copyTo(*output);
 
     int rows = input->rows;
     int cols = input->cols;
@@ -204,19 +209,16 @@ void quantizeRGB(
         table[i] = (uchar)(val * (i / val));
     }
 
-    int x, y, z, idx;
-    for (int x = 0; x < input->rows; x++){
-        buf_in = input->ptr<uchar>(x);
-        buf_out = output->ptr<uchar>(x);
+    int idx = 0;
+    int pixels = rows * cols;
 
-        for (int y = 0; y < input->cols; y++){
-            int idx = y * 4;
-
-            buf_out[idx] = table[buf_in[idx]];
-            buf_out[idx + 1] = table[buf_in[idx + 1]];
-            buf_out[idx + 2] = table[buf_in[idx + 2]];
-            buf_out[idx + 3] = buf_in[idx + 3];
-        }
+    uchar* buf_in = input->data;
+    uchar* buf_out = output->data;
+    for (int i = 0; i < pixels; i++) {
+        buf_out[idx] = table[buf_in[idx]];
+        buf_out[idx + 1] = table[buf_in[idx + 1]];
+        buf_out[idx + 2] = table[buf_in[idx + 2]];
+        idx += 4;
     }
 }
 
@@ -228,7 +230,7 @@ void grayscale(
     cv::Mat* input = input_images[0];
     cv::Mat* output = output_images[0];
 
-    *output = input->clone();
+    input->copyTo(*output);
     uchar* buf_in;
     uchar* buf_out;
 
@@ -354,4 +356,60 @@ void HSVSplit(
     double time = std::chrono::duration<double, std::milli>(end - start).count();
     std::cout << "Custom: " << time << " ms\n";
     //printImage(output);
+}
+
+void BinaryThres(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+) {
+    cv::Mat* input = input_images[0];
+    cv::Mat* output = output_images[0];
+    input->copyTo(*output);
+
+    uchar val = (params[0] == NULL) ? 100 : *(uchar*)params[0];
+
+
+    int rows = input->rows;
+    int cols = input->cols;
+    
+	int pixels = rows * cols;
+	int idx = 0;
+
+    uchar* buf_in = input->data;
+    uchar* buf_out = output->data;
+    for (int i = 0; i < pixels; i++) {
+        if (buf_in[idx] >= val) {
+            buf_out[idx] = buf_out[idx + 1] = buf_out[idx + 2] = 255;
+        } else {
+            buf_out[idx] = buf_out[idx + 1] = buf_out[idx + 2] = 0;
+        }
+        idx += 4;
+    }
+}
+
+void RGBMask(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+) {
+    cv::Mat* color = input_images[0];
+    cv::Mat* mask = input_images[1];
+    cv::Mat* output = output_images[0];
+    color->copyTo(*output);
+
+    int rows = color->rows;
+    int cols = color->cols;
+
+    int pixels = rows * cols;
+    int idx = 0;
+
+    uchar* buf_in = mask->data;
+    uchar* buf_out = output->data;
+    for (int i = 0; i < pixels; i++) {
+        if (buf_in[idx] == 0) {
+            buf_out[idx] = buf_out[idx + 1] = buf_out[idx + 2] = 0;
+        }
+        idx += 4;
+    }
 }

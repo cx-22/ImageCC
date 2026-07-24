@@ -10,6 +10,8 @@ std::shared_ptr<NodeDelegateModelRegistry> build_reg(){
     reg->registerModel<QuantizeNode>();
     reg->registerModel<GrayNode>();
     reg->registerModel<HSVSplitNode>();
+    reg->registerModel<BinaryThresNode>();
+    reg->registerModel<RGBMaskNode>();
 
     return reg;
 }
@@ -22,4 +24,6 @@ std::map<std::string, int> g_name_func_map = {
     {"Quantize RGB", 4},
     {"Grayscale", 5},
     {"HSV Split", 6},
+    {"Binary Threshold", 7},
+    {"RGB Mask", 8},
 };

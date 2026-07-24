@@ -43,3 +43,15 @@ void HSVSplit(
     cv::Mat** output_images,
     void** params
 );
+
+void BinaryThres(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+);
+
+void RGBMask(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+);
