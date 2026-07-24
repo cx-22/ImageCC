@@ -42,12 +42,12 @@ extern "C" {
 
 // Returns a raw data buffer containing 
 // 32-bit RGBA data buffer. Must be freed.
-uint8_t * tpng_get_rgba(
+uchar * tpng_get_rgba(
 
     // The raw data to interpret.
     // This should be the entire data buffer of 
     // a valid PNG file.
-    const uint8_t * rawData,
+    const uchar * rawData,
 
     // The number of bytes of the rawData.
     uint32_t        rawSize,

@@ -14,16 +14,6 @@ public:
     }
 };
 
-class OutputNode : public BaseNode{
-public:
-    OutputNode(){
-        type = OUTPUT;
-        title = "Output";
-        initialize();
-    }
-};
-
-
 class BMathNode : public BaseNode{
 public:
     uchar mode;
@@ -32,7 +22,7 @@ public:
     QComboBox* combo;
     QSlider* slider;
     BMathNode(){
-        type = 0;
+        type = 1;
         title = "Arithmetic";
 
         val = 100;
@@ -91,7 +81,7 @@ public:
     QSlider* slider;
     float val;
     BlendNode() {
-        type = 1;
+        type = 2;
         title = "Blend";
         slider = new QSlider(Qt::Horizontal);
         slider->setRange(0, 100);
@@ -113,7 +103,7 @@ public:
 class RGBSplitNode : public BaseNode {
 public:
     RGBSplitNode() {
-        type = 2;
+        type = 3;
         title = "RGB Split";
         initialize();
     }
@@ -125,7 +115,7 @@ public:
     QSlider* slider;
     uchar val;
     QuantizeNode() {
-        type = 3;
+        type = 4;
         title = "Quantize RGB";
         slider = new QSlider(Qt::Horizontal);
         slider->setRange(0, 255);
@@ -149,7 +139,7 @@ public:
     QComboBox* combo;
     uchar mode;
     GrayNode() {
-        type = 4;
+        type = 5;
         title = "Grayscale";
         combo = new QComboBox();
         combo->addItem("NTSC");
@@ -166,5 +156,15 @@ public:
     }
     ~GrayNode() {
         delete combo;
+    }
+};
+
+
+class HSVSplitNode : public BaseNode {
+public:
+    HSVSplitNode() {
+        type = 6;
+        title = "HSV Split";
+        initialize();
     }
 };

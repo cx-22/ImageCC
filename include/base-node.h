@@ -51,8 +51,8 @@ public:
     std::shared_ptr<NodeData> nodeData;
 
     uchar status;
-    std::vector<struct Image*> input_images;
-    std::vector<struct Image*> output_images;
+    std::vector<cv::Mat*> input_images;
+    std::vector<cv::Mat*> output_images;
     std::vector<void*> params;
 
     struct function* func;

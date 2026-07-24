@@ -14,14 +14,14 @@
 class ImageData : public NodeData
 {
 public:
-    ImageData(Image* img) : image(img) {}
+    ImageData(cv::Mat* img) : image(img) {}
 
     NodeDataType type() const override
     {
         return NodeDataType{ "image", "Image" };
     }
 
-    Image* image;
+    cv::Mat* image;
 };
 
 BaseNode::BaseNode(){
@@ -35,7 +35,7 @@ BaseNode::BaseNode(){
 }
 
 void BaseNode::initialize(){
-	func = &func_list[type+2];
+	func = &func_list[type];
     int i = 0;
 
 
@@ -44,7 +44,7 @@ void BaseNode::initialize(){
 	}
 
     for (i = 0; i < func->n_outputs; i++) {
-		Image* img = new Image{};;
+		cv::Mat* img = new cv::Mat();
         output_images.push_back(img);
     }
 
@@ -63,7 +63,7 @@ void BaseNode::initialize(){
 
     input_images.resize(func->n_inputs);
     for (i = 0; i < func->n_inputs; i++) {
-        Image* img = NULL;
+        cv::Mat* img = NULL;
         input_images.push_back(img);
     }
 
@@ -158,7 +158,7 @@ bool BaseNode::eventFilter(QObject* object, QEvent* event)
                         )
                     );
 
-                    pixmapToImage(pixmaps[0], output_images[0]);
+                    pixmapToMat(pixmaps[0], output_images[0]);
 
                     status = ACTIVE;
                     Q_EMIT dataUpdated(0);
@@ -216,7 +216,7 @@ void BaseNode::setInData(std::shared_ptr<NodeData> nodeData, PortIndex const ind
     // Check if all inputs are available
     bool ready = true;
     for (int i = 0; i < func->n_inputs; i++) {
-        if (input_images[i] == nullptr) {
+        if (input_images[i] == NULL || input_images[i]->empty()) {
             ready = false;
             break;
         }
@@ -254,7 +254,7 @@ void BaseNode::update()
     int i;
 
     for (i = 0; i < func->n_inputs; i++) {
-        if (input_images[i] == nullptr) {
+        if (input_images[i] == nullptr || input_images.empty()) {
             return;
 		}
     }
@@ -268,7 +268,7 @@ void BaseNode::update()
         if (output_images[i] == nullptr)
             continue;
 
-        imageToPixmap(output_images[i], pixmaps[i]);
+        matToPixmap(output_images[i], pixmaps[i]);
 
         if (i < labels.size() && pixmaps[i] != nullptr) {
             int w = labels[i]->width();

@@ -7,20 +7,35 @@
 
 std::vector<function> func_list;
 
+/*
+    auto start = std::chrono::high_resolution_clock::now();
+    /////
+    auto end = std::chrono::high_resolution_clock::now();
+    double time = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "OPENCV: " << time << " ms\n";
+
+
+
+    start = std::chrono::high_resolution_clock::now();
+    end = std::chrono::high_resolution_clock::now();
+    ///////
+    time = std::chrono::duration<double, std::milli>(end - start).count();
+*/
+
 void buildFuncs(){
     func_list.reserve(20);
 
     func_list.emplace_back(function{ NULL, 0, 1, 0 });
-    func_list.emplace_back(function{ NULL, 1, 0, 0 });
 
-    // 0 - 4
+    // 1 - 5
     func_list.emplace_back(function{ arithmetic, 1, 1, 1 });
     func_list.emplace_back(function{ add2Images, 2, 1, 1 });
     func_list.emplace_back(function{ RGBSplit, 1, 3, 0 });
     func_list.emplace_back(function{ quantizeRGB, 1, 1, 1 });
     func_list.emplace_back(function{ grayscale, 1, 1, 1 });
 
-	// 5 - 9
+	// 6 - 10
+    func_list.emplace_back(function{ HSVSplit, 1, 3, 0 });
 }
 
 void killFuncs(){
@@ -28,230 +43,200 @@ void killFuncs(){
 }
 
 void arithmetic(
-    struct Image** input_images,
-    struct Image** output_images,
+    cv::Mat** input_images,
+    cv::Mat** output_images,
     void** params
 ) {
-    struct Image* input = input_images[0];
-    struct Image* output = output_images[0];
+    cv::Mat* input = input_images[0];
+    cv::Mat* output = output_images[0];
 
-    deepCopyImage(output, input);
-    uint8_t* buf_in = input->buffer;
-    uint8_t* buf_out = output->buffer;
+    *output = input->clone();
 
     int rows = input->rows;
     int cols = input->cols;
     int c = 4;
 
-    uint8_t mode = (params[0] == NULL) ? 0 : *(uint8_t*)params[0];
+    uchar mode = (params[0] == NULL) ? 0 : *(uchar*)params[0];
 
-    uchar* ptr_in;
-    uchar* ptr_out;
 
-    uint8_t val = (params[1] == NULL) ? 100 : *(uint8_t*)params[1];
+    uchar val = (params[1] == NULL) ? 100 : *(uchar*)params[1];
     float factor = (params[1] == NULL) ? 2 : *(float*)params[1];
     int total;
 
-    int x, y, z, idx;
+    uchar* buf_in;
+    uchar* buf_out;
+
+    int x, y, z, i;
+    int idx = 0;
+    int pixels = rows * cols;
 
     //mode: 0/1/2 Addition/Subtraction/Factor
     switch (mode) {
     case 0:
-        for (x = 0; x < rows; x++) {
-            for (y = 0; y < cols; y++) {
-                idx = (x * cols + y) * c;
-                for (z = 0; z < 3; z++) {
-                    total = buf_in[idx + z] + val;
-                    buf_out[idx + z] = (total > 255) ? 255 : total;
-                }
-            }
-        }
+        *output = *input + cv::Scalar(val, val, val);
         break;
 
     case 1:
-        for (x = 0; x < rows; x++) {
-            for (y = 0; y < cols; y++) {
-                idx = (x * cols + y) * c;
-                for (z = 0; z < 3; z++) {
-                    total = buf_in[idx + z] - val;
-                    buf_out[idx + z] = (total < 0) ? 0 : total;
-                }
-            }
+        buf_in = input->data;
+        buf_out = output->data;
+        for (i = 0; i < pixels; i++) {
+            total = buf_in[idx] - val;
+            buf_out[idx] = (total < 0) ? 0 : total;
+
+            total = buf_in[idx + 1] - val;
+            buf_out[idx + 1] = (total < 0) ? 0 : total;
+
+            total = buf_in[idx + 2] - val;
+            buf_out[idx + 2] = (total < 0) ? 0 : total;
+            idx += 4;
         }
         break;
 
     case 2:
-        for (x = 0; x < rows; x++) {
-            for (y = 0; y < cols; y++) {
-                idx = (x * cols + y) * c;
-                for (z = 0; z < 3; z++) {
-                    total = buf_in[idx + z] * factor;
-                    if (total > 255) {
-                        total = 255;
-                    }
-                    else if (total < 0) {
-                        total = 0;
-                    }
-                    buf_out[idx + z] = total;
-                }
-            }
+        buf_in = input->data;
+        buf_out = output->data;
+        for (int i = 0; i < pixels; i++) {
+
+            int total;
+
+            total = buf_in[idx] * factor;
+            buf_out[idx] = (total > 255) ? 255 : total;
+
+            total = buf_in[idx + 1] * factor;
+            buf_out[idx + 1] = (total > 255) ? 255 : total;
+
+            total = buf_in[idx + 2] * factor;
+            buf_out[idx + 2] = (total > 255) ? 255 : total;
+            idx += 4;
         }
+
         break;
     };
 }
 
 void add2Images(
-    struct Image** input_images,
-    struct Image** output_images,
+    cv::Mat** input_images,
+    cv::Mat** output_images,
     void** params
 ){
-    struct Image* input1 = input_images[0];
-    struct Image* input2 = input_images[1];
-    struct Image* output = output_images[0];
-
-    deepCopyImage(output, input1);
-    uint8_t* buf_in1 = input1->buffer;
-    uint8_t* buf_in2 = input2->buffer;
-    uint8_t* buf_out = output->buffer;
-    
-    int rows = input1->rows;
-    int cols = input1->cols;
-    int c = 4;
+    cv::Mat* input1 = input_images[0];
+    cv::Mat* input2 = input_images[1];
+    cv::Mat* output = output_images[0];
 
     float alpha = (params[0] == NULL) ? 0.5 : *(float*)params[0];
-    int x, y, z, idx, total;
-    for (x = 0; x < rows; x++)
-    {
-        for (y = 0; y < cols; y++){
-            idx = (x * cols + y)*c;
-            for ( z = 0; z < 4; z++){
-                total = (uint8_t)(buf_in1[idx+z] * alpha) + 
-                        (buf_in2[idx+z] * (1-alpha));
-
-                buf_out[idx+z] = (total > 255) ? 255 : total;
-            }
-        }
+    if (alpha == 0) {
+        *output = input1->clone();
+    } else if (alpha == 1){
+        *output = input2->clone();
+    } else {
+        *output = input1->clone();
     }
+
+    cv::addWeighted(*input1, alpha, *input2, 1 - alpha, 0, *output);
+
     //printImage(output);
 }
 
 
 void RGBSplit(
-    struct Image** input_images,
-    struct Image** output_images,
+    cv::Mat** input_images,
+    cv::Mat** output_images,
     void** params
 ) {
-    struct Image* input = input_images[0];
-    struct Image* outputR = output_images[0];
-    struct Image* outputG = output_images[1];
-    struct Image* outputB = output_images[2];
+    auto start = std::chrono::high_resolution_clock::now();
+    cv::Mat* input = input_images[0];
 
-    deepCopyImage(outputR, input);
-    deepCopyImage(outputG, input);
-    deepCopyImage(outputB, input);
-    uint8_t* buf_in = input->buffer;
-    uint8_t* buf_out_r = outputR->buffer;
-    uint8_t* buf_out_g = outputG->buffer;
-    uint8_t* buf_out_b = outputB->buffer;
+    cv::Mat chans[4];
+    cv::split(*input, chans);
 
-    int rows = input->rows;
-    int cols = input->cols;
-    int c = 4;
+    std::vector<cv::Mat> r_channels = {
+        chans[0],
+        cv::Mat::zeros(chans[0].size(), CV_8UC1),
+        cv::Mat::zeros(chans[0].size(), CV_8UC1),
+        chans[3]
+    };
 
-    int x, y, z, idx, total;
-    for (x = 0; x < rows; x++)
-    {
-        for (y = 0; y < cols; y++) {
-            idx = (x * cols + y) * c;
-            for (z = 0; z < 4; z++) {
-                switch (z) {
-                    case 0:
-                        buf_out_r[idx + z] = buf_in[idx + z];
-                        buf_out_g[idx + z] = 0;
-                        buf_out_b[idx + z] = 0;
-                        break;
-                    case 1:
-                        buf_out_r[idx + z] = 0;
-                        buf_out_g[idx + z] = buf_in[idx + z];
-                        buf_out_b[idx + z] = 0;
-                        break;
-                    case 2:
-                        buf_out_r[idx + z] = 0;
-                        buf_out_g[idx + z] = 0;
-                        buf_out_b[idx + z] = buf_in[idx + z];
-                        break;
-                    case 3:
-                        buf_out_r[idx + z] = buf_in[idx + z];
-                        buf_out_g[idx + z] = buf_in[idx + z];
-                        buf_out_b[idx + z] = buf_in[idx + z];
-                        break;
-				}
-            }
-        }
-    }
+    std::vector<cv::Mat> g_channels = {
+        cv::Mat::zeros(chans[0].size(), CV_8UC1),
+        chans[1],
+        cv::Mat::zeros(chans[0].size(), CV_8UC1),
+        chans[3]
+    };
+
+    std::vector<cv::Mat> b_channels = {
+        cv::Mat::zeros(chans[0].size(), CV_8UC1),
+        cv::Mat::zeros(chans[0].size(), CV_8UC1),
+        chans[2],
+        chans[3]
+    };
+
+    cv::merge(b_channels, *output_images[2]);
+    cv::merge(g_channels, *output_images[1]);
+    cv::merge(r_channels, *output_images[0]);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    double time = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "Custom: " << time << " ms\n";
     //printImage(output);
 }
 
 
 void quantizeRGB(
-    struct Image** input_images,
-    struct Image** output_images,
+    cv::Mat** input_images,
+    cv::Mat** output_images,
     void** params
 ) {
-    struct Image* input = input_images[0];
-    struct Image* output = output_images[0];
+    cv::Mat* input = input_images[0];
+    cv::Mat* output = output_images[0];
 
-    deepCopyImage(output, input);
-    uint8_t* buf_in = input->buffer;
-    uint8_t* buf_out = output->buffer;
+    *output = input->clone();
+    uchar* buf_in;
+    uchar* buf_out;
 
     int rows = input->rows;
     int cols = input->cols;
     int c = 4;
 
-    uint8_t val = (params[0] == NULL) ? 100 : *(uint8_t*)params[0];
+    uchar val = (params[0] == NULL) ? 100 : *(uchar*)params[0];
     int table[256];
     
     for (int i = 0; i < 256; i++) {
-        table[i] = (uint8_t)(val * (i / val));
+        table[i] = (uchar)(val * (i / val));
     }
 
-    uchar* ptr_in;
-    uchar* ptr_out;
-
     int x, y, z, idx;
-    //printf("adding with %d\n", val);
-    for (x = 0; x < rows; x++)
-    {
-        for (y = 0; y < cols; y++) {
-            idx = (x * cols + y) * c;
-            for (z = 0; z < 3; z++) {
-                buf_out[idx + z] = table[buf_in[idx + z]];
-            }
+    for (int x = 0; x < input->rows; x++){
+        buf_in = input->ptr<uchar>(x);
+        buf_out = output->ptr<uchar>(x);
+
+        for (int y = 0; y < input->cols; y++){
+            int idx = y * 4;
+
+            buf_out[idx] = table[buf_in[idx]];
+            buf_out[idx + 1] = table[buf_in[idx + 1]];
+            buf_out[idx + 2] = table[buf_in[idx + 2]];
+            buf_out[idx + 3] = buf_in[idx + 3];
         }
     }
 }
 
 void grayscale(
-    struct Image** input_images,
-    struct Image** output_images,
+    cv::Mat** input_images,
+    cv::Mat** output_images,
     void** params
 ) {
-    struct Image* input = input_images[0];
-    struct Image* output = output_images[0];
+    cv::Mat* input = input_images[0];
+    cv::Mat* output = output_images[0];
 
-    deepCopyImage(output, input);
-    uint8_t* buf_in = input->buffer;
-    uint8_t* buf_out = output->buffer;
+    *output = input->clone();
+    uchar* buf_in;
+    uchar* buf_out;
 
     int rows = input->rows;
     int cols = input->cols;
     int c = 4;
 
-    uint8_t mode = (params[0] == NULL) ? 0 : *(uint8_t*)params[0];
-
-    uchar* ptr_in;
-    uchar* ptr_out;
+    uchar mode = (params[0] == NULL) ? 0 : *(uchar*)params[0];
 
     int x, y, z, idx;
 
@@ -259,9 +244,11 @@ void grayscale(
     switch (mode) {
     case 0:
         for (x = 0; x < rows; x++) {
+            buf_in = input->ptr<uchar>(x);
+            buf_out = output->ptr<uchar>(x);
             for (y = 0; y < cols; y++) {
-                idx = (x * cols + y) * c;
-                uint8_t gray = (uint8_t)(0.299 * buf_in[idx] + 0.587 * buf_in[idx + 1] + 0.114 * buf_in[idx + 2]);
+                idx = y * c;
+                uchar gray = (uchar)(0.299 * buf_in[idx] + 0.587 * buf_in[idx + 1] + 0.114 * buf_in[idx + 2]);
                 buf_out[idx] = gray;
                 buf_out[idx + 1] = gray;
                 buf_out[idx + 2] = gray;
@@ -272,8 +259,10 @@ void grayscale(
 
     case 1:
         for (x = 0; x < rows; x++) {
+            buf_in = input->ptr<uchar>(x);
+            buf_out = output->ptr<uchar>(x);
             for (y = 0; y < cols; y++) {
-                idx = (x * cols + y) * c;
+                idx = y * c;
                 buf_out[idx + 1] = buf_in[idx];
                 buf_out[idx + 2] = buf_in[idx];
             }
@@ -282,8 +271,10 @@ void grayscale(
 
     case 2:
         for (x = 0; x < rows; x++) {
+            buf_in = input->ptr<uchar>(x);
+            buf_out = output->ptr<uchar>(x);
             for (y = 0; y < cols; y++) {
-                idx = (x * cols + y) * c;
+                idx = y * c;
                 buf_out[idx] = buf_in[idx + 1];
                 buf_out[idx + 2] = buf_in[idx + 1];
             }
@@ -292,12 +283,75 @@ void grayscale(
 
     case 3:
         for (x = 0; x < rows; x++) {
+            buf_in = input->ptr<uchar>(x);
+            buf_out = output->ptr<uchar>(x);
             for (y = 0; y < cols; y++) {
-                idx = (x * cols + y) * c;
+                idx = y * c;
                 buf_out[idx + 0] = buf_in[idx + 2];
                 buf_out[idx + 1] = buf_in[idx + 2];
             }
         }
         break;
     };
+}
+
+
+void HSVSplit(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+) {
+    auto start = std::chrono::high_resolution_clock::now();
+    cv::Mat* input = input_images[0];
+
+    cv::Mat rgb;
+    cv::cvtColor(*input, rgb, cv::COLOR_RGBA2RGB);
+    cv::Mat hsv;
+    cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV);
+
+    // Split the original RGBA to get alpha
+    cv::Mat rgba[4];
+    cv::split(*input, rgba);
+
+    // Split HSV
+    cv::Mat hsv_chans[3];
+    cv::split(hsv, hsv_chans);
+
+    // H output
+    {
+        cv::Mat out[4] = {
+            hsv_chans[0],
+            hsv_chans[0],
+            hsv_chans[0],
+            rgba[3]
+        };
+        cv::merge(out, 4, *output_images[0]);
+    }
+
+    // S output
+    {
+        cv::Mat out[4] = {
+            hsv_chans[1],
+            hsv_chans[1],
+            hsv_chans[1],
+            rgba[3]
+        };
+        cv::merge(out, 4, *output_images[1]);
+    }
+
+    // V output
+    {
+        cv::Mat out[4] = {
+            hsv_chans[2],
+            hsv_chans[2],
+            hsv_chans[2],
+            rgba[3]
+        };
+        cv::merge(out, 4, *output_images[2]);
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    double time = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "Custom: " << time << " ms\n";
+    //printImage(output);
 }

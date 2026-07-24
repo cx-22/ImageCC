@@ -86,10 +86,10 @@ void SideBar::toggleCategory()
 
 void SideBar::buildCats(){
     addNode("util", "Input");
-    addNode("util", "Output");
     addNode("simple", "Arithmetic");
     addNode("simple", "Blend");
     addNode("simple", "RGB Split");
     addNode("simple", "Quantize RGB");
     addNode("simple", "Grayscale");
+    addNode("simple", "HSV Split");
 }
