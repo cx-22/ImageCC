@@ -94,4 +94,5 @@ void SideBar::buildCats(){
     addNode("simple", "HSV Split");
     addNode("simple", "Binary Threshold");
     addNode("simple", "RGB Mask");
+    addNode("simple", "Hist Eq");
 }

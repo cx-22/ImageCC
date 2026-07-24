@@ -118,7 +118,7 @@ public:
         type = 4;
         title = "Quantize RGB";
         slider = new QSlider(Qt::Horizontal);
-        slider->setRange(1, 256);
+        slider->setRange(1, 255);
         slider->setValue(100);
         slider->connect(slider, &QSlider::valueChanged, [this](int value) {
             val = static_cast<uchar>(value);
@@ -197,6 +197,15 @@ public:
     RGBMaskNode() {
         type = 8;
         title = "RGB Mask";
+        initialize();
+    }
+};
+
+class HistEqNode : public BaseNode {
+public:
+    HistEqNode() {
+        type = 9;
+        title = "Hist Eq";
         initialize();
     }
 };

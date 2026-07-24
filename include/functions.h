@@ -55,3 +55,9 @@ void RGBMask(
     cv::Mat** output_images,
     void** params
 );
+
+void HistEq(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+);

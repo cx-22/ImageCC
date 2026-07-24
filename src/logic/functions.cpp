@@ -38,6 +38,7 @@ void buildFuncs(){
     func_list.emplace_back(function{ HSVSplit, 1, 3, 0 });
     func_list.emplace_back(function{ BinaryThres, 1, 1, 1 });
     func_list.emplace_back(function{ RGBMask, 2, 1, 0 });
+    func_list.emplace_back(function{ HistEq, 1, 1, 0 });
 }
 
 void killFuncs(){
@@ -203,10 +204,10 @@ void quantizeRGB(
     int c = 4;
 
     uchar val = (params[0] == NULL) ? 100 : *(uchar*)params[0];
-    int table[256];
+    uchar table[256];
     
     for (int i = 0; i < 256; i++) {
-        table[i] = (uchar)(val * (i / val));
+        table[i] = static_cast<uchar>(val * (i / val));
     }
 
     int idx = 0;
@@ -388,6 +389,7 @@ void BinaryThres(
     }
 }
 
+//TODO: give options for binary, inv binary, or smooth
 void RGBMask(
     cv::Mat** input_images,
     cv::Mat** output_images,
@@ -412,4 +414,47 @@ void RGBMask(
         }
         idx += 4;
     }
+}
+
+
+void HistEq(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+) {
+    auto start = std::chrono::high_resolution_clock::now();
+    cv::Mat* input = input_images[0];
+
+    cv::Mat rgb;
+    cv::cvtColor(*input, rgb, cv::COLOR_RGBA2RGB);
+    cv::Mat hsv;
+    cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV);
+
+    cv::Mat rgba[4];
+    cv::split(*input, rgba);
+
+    cv::Mat hsv_chans[3];
+    cv::split(hsv, hsv_chans);
+
+	cv::equalizeHist(hsv_chans[2], hsv_chans[2]);
+
+    cv::merge(hsv_chans, 3, hsv);
+    cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB);
+
+    cv::Mat rgb_chans[3];
+    cv::split(rgb, rgb_chans);
+
+    cv::Mat out[4] = {
+        rgb_chans[0],
+        rgb_chans[1],
+        rgb_chans[2],
+        rgba[3]
+    };
+
+    cv::merge(out, 4, *output_images[0]);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    double time = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "Custom: " << time << " ms\n";
+    //printImage(output);
 }
