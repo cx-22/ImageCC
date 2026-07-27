@@ -6,7 +6,7 @@
 #define MAXNODES	20
 #define MAX_OUT		10
 
-#define INPUT		0
+#define INPUT	0
 
 #define ACTIVE		0
 #define INACTIVE	1

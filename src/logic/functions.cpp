@@ -39,6 +39,11 @@ void buildFuncs(){
     func_list.emplace_back(function{ BinaryThres, 1, 1, 1 });
     func_list.emplace_back(function{ RGBMask, 2, 1, 0 });
     func_list.emplace_back(function{ HistEq, 1, 1, 0 });
+    func_list.emplace_back(function{ HSVMerge, 3, 1, 0 });
+
+    //11-15
+    func_list.emplace_back(function{ RGBMerge, 3, 1, 0 });
+    func_list.emplace_back(function{ ChangeHL, 2, 1, 0 });
 }
 
 void killFuncs(){
@@ -73,7 +78,7 @@ void arithmetic(
     int idx = 0;
     int pixels = rows * cols;
 
-    //mode: 0/1/2 Addition/Subtraction/Factor
+    //mode: 0/1/2/3 Addition/Subtraction/Multiply/Divide
     switch (mode) {
     case 0:
         *output = *input + cv::Scalar(val, val, val);
@@ -112,7 +117,20 @@ void arithmetic(
             buf_out[idx + 2] = (total > 255) ? 255 : total;
             idx += 4;
         }
+        break;
 
+    case 3:
+        buf_in = input->data;
+        buf_out = output->data;
+        for (int i = 0; i < pixels; i++) {
+
+            int total;
+
+            buf_out[idx] = buf_in[idx] / factor;
+            buf_out[idx + 1] = buf_in[idx+1] / factor;
+            buf_out[idx + 2] = buf_in[idx+2] / factor;
+            idx += 4;
+        }
         break;
     };
 }
@@ -312,15 +330,12 @@ void HSVSplit(
     cv::Mat hsv;
     cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV);
 
-    // Split the original RGBA to get alpha
     cv::Mat rgba[4];
     cv::split(*input, rgba);
 
-    // Split HSV
     cv::Mat hsv_chans[3];
     cv::split(hsv, hsv_chans);
 
-    // H output
     {
         cv::Mat out[4] = {
             hsv_chans[0],
@@ -331,7 +346,6 @@ void HSVSplit(
         cv::merge(out, 4, *output_images[0]);
     }
 
-    // S output
     {
         cv::Mat out[4] = {
             hsv_chans[1],
@@ -342,7 +356,6 @@ void HSVSplit(
         cv::merge(out, 4, *output_images[1]);
     }
 
-    // V output
     {
         cv::Mat out[4] = {
             hsv_chans[2],
@@ -457,4 +470,136 @@ void HistEq(
     double time = std::chrono::duration<double, std::milli>(end - start).count();
     std::cout << "Custom: " << time << " ms\n";
     //printImage(output);
+}
+
+void HSVMerge(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+) {
+    auto start = std::chrono::high_resolution_clock::now();
+    cv::Mat* hue = input_images[0];
+    cv::Mat* sat = input_images[1];
+    cv::Mat* val = input_images[2];
+    cv::Mat* output = output_images[0];
+    
+    int rows = hue->rows;
+    int cols = hue->cols;
+
+    *output = cv::Mat(rows, cols, CV_8UC4);
+
+    cv::Mat hsv = cv::Mat(rows, cols, CV_8UC3);
+
+    int pixels = rows * cols;
+    int idx_in = 0;
+    int idx_out = 0;
+
+    uchar* buf_h = hue->data;
+    uchar* buf_s = sat->data;
+    uchar* buf_v = val->data;
+    uchar* buf_hsv = hsv.data;
+    for (int i = 0; i < pixels; i++) {
+        buf_hsv[idx_out] = buf_h[idx_in];
+        buf_hsv[idx_out+1] = buf_s[idx_in];
+        buf_hsv[idx_out+2] = buf_v[idx_in];
+        idx_in += 4;
+        idx_out += 3;
+    }
+
+
+    cv::Mat rgb;
+    cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB);
+
+    uchar* buf_in = rgb.data;
+    uchar* buf_out = output->data;
+    idx_in = 0;
+    idx_out = 0;
+    for (int i = 0; i < pixels; i++) {
+        buf_out[idx_out] = buf_in[idx_in];
+        buf_out[idx_out+1] = buf_in[idx_in+1];
+        buf_out[idx_out+2] = buf_in[idx_in+2];
+        buf_out[idx_out + 3] = buf_h[idx_out + 3];
+        idx_in += 3;
+        idx_out += 4;
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    double time = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "Custom: " << time << " ms\n";
+}
+
+void RGBMerge(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+) {
+    auto start = std::chrono::high_resolution_clock::now();
+    cv::Mat* r = input_images[0];
+    cv::Mat* g = input_images[1];
+    cv::Mat* b = input_images[2];
+    cv::Mat* output = output_images[0];
+
+    r->copyTo(*output);
+
+    int rows = r->rows;
+    int cols = r->cols;
+
+    int pixels = rows * cols;
+    int idx = 0;
+
+    uchar* buf_r = r->data;
+    uchar* buf_g = g->data;
+    uchar* buf_b = b->data;
+    uchar* buf_out = output->data;
+    for (int i = 0; i < pixels; i++) {
+        buf_out[idx] = buf_r[idx];
+        buf_out[idx+1] = buf_g[idx+1];
+        buf_out[idx+2] = buf_b[idx+2];
+        idx += 4;
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    double time = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "Custom: " << time << " ms\n";
+}
+
+void ChangeHL(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+) {
+    auto start = std::chrono::high_resolution_clock::now();
+    cv::Mat* input1 = input_images[0];
+    cv::Mat* input2 = input_images[1];
+    cv::Mat* output = output_images[0];
+
+
+    int rows = input1->rows;
+    int cols = input1->cols;
+
+    *output = cv::Mat(rows, cols, CV_8UC4);
+
+    int pixels = rows * cols;
+    int idx = 0;
+
+    uchar* buf_in1 = input1->data;
+    uchar* buf_in2 = input2->data;
+    uchar* buf_out = output->data;
+    for (int i = 0; i < pixels; i++) {
+        if (buf_in1[idx] == buf_in2[idx] &&
+            buf_in1[idx+1] == buf_in2[idx+1] &&
+            buf_in1[idx+2] == buf_in2[idx+2])
+        {
+            buf_out[idx] = buf_out[idx + 1] = buf_out[idx + 2] = 0;
+        }
+        else {
+            buf_out[idx] = buf_out[idx + 1] = buf_out[idx + 2] = 255;
+        }
+        buf_out[idx + 3] = buf_in1[idx + 3];
+        idx += 4;
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    double time = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "Custom: " << time << " ms\n";
 }

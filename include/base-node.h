@@ -1,10 +1,14 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <atomic>
 
 #include <QtCore/QObject>
 #include <QtWidgets/QLabel>
 #include <QVBoxLayout>
+#include <QtConcurrent>
+#include <QFuture>
+#include <QThread>
 
 #include <QtNodes/NodeDelegateModel>
 #include <QtNodes/NodeDelegateModelRegistry>
@@ -17,12 +21,16 @@ using QtNodes::NodeDelegateModel;
 using QtNodes::PortIndex;
 using QtNodes::PortType;
 
+#define PLAYING 0
+#define PAUSED 1
+#define NO_VIDEO 2
+
 class BaseNode : public NodeDelegateModel
 {
     Q_OBJECT
 public:
     BaseNode();
-    //~BaseNode();
+    ~BaseNode();
 
     int type;
     //uint nid;
@@ -57,11 +65,23 @@ public:
 
     struct function* func;
 
+    bool video;
     QWidget* main_widget;
     QVBoxLayout* main_layout;
 
+    cv::VideoCapture cap;
+    cv::Mat rgb_dummy;
+    std::atomic_char video_status;
+    QFuture<void> future;
+
+    void runVideo();
     void initialize();
     void update();
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
+public slots:
+    void updateVideoFrame(cv::Mat frame);
+signals:
+    void videoFrameUpdated(cv::Mat frame);
+
 };

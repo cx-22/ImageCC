@@ -5,11 +5,22 @@
 #include <Qslider>
 #include <QComboBox>
 
-class InputNode : public BaseNode{
+class InputVidNode : public BaseNode {
 public:
-    InputNode(){
+    InputVidNode() {
         type = INPUT;
-        title = "Input";
+        title = "Input Video";
+        video = true;
+        initialize();
+    }
+};
+
+class InputImgNode : public BaseNode{
+public:
+    InputImgNode(){
+        type = INPUT;
+        title = "Input Image";
+        video = false;
         initialize();
     }
 };
@@ -31,21 +42,22 @@ public:
         combo = new QComboBox();
         combo->addItem("Addition");
         combo->addItem("Subtraction");
-        combo->addItem("Factor");
+        combo->addItem("Multiply");
+        combo->addItem("Divide");
 		combo->setCurrentIndex(0);
 
         slider = new QSlider(Qt::Horizontal);
         slider->setRange(0, 255);
         slider->setValue(100);
         slider->connect(slider, &QSlider::valueChanged, [this](int value) {
-            if (mode == 2) {
+            if (mode > 1) {
                 factor = static_cast<float>(value) / 100.0f;
             }
             else {
                 val = static_cast<uchar>(value);
 			}
 
-            params[1] = (mode == 2) ? static_cast<void*>(&factor) : static_cast<void*>(&val);
+            params[1] = (mode > 1) ? static_cast<void*>(&factor) : static_cast<void*>(&val);
             update();
             });
 
@@ -53,8 +65,8 @@ public:
             mode = static_cast<uchar>(index);
             params[0] = static_cast<void*>(&mode);
 
-            if (mode == 2) {
-                slider->setRange(1, 400);
+            if (mode > 1) {
+                slider->setRange(100, 1000);
                 slider->setValue(factor * 100);
                 params[1] = static_cast<void*>(&factor);
             }
@@ -206,6 +218,33 @@ public:
     HistEqNode() {
         type = 9;
         title = "Hist Eq";
+        initialize();
+    }
+};
+
+class HSVMergeNode : public BaseNode {
+public:
+    HSVMergeNode() {
+        type = 10;
+        title = "HSV Merge";
+        initialize();
+    }
+};
+
+class RGBMergeNode : public BaseNode {
+public:
+    RGBMergeNode() {
+        type = 11;
+        title = "RGB Merge";
+        initialize();
+    }
+};
+
+class DiffHLNode : public BaseNode {
+public:
+    DiffHLNode() {
+        type = 12;
+        title = "Diff Highlight";
         initialize();
     }
 };

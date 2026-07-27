@@ -85,7 +85,8 @@ void SideBar::toggleCategory()
 }
 
 void SideBar::buildCats(){
-    addNode("util", "Input");
+    addNode("util", "Input Image");
+    addNode("util", "Input Video");
     addNode("simple", "Arithmetic");
     addNode("simple", "Blend");
     addNode("simple", "RGB Split");
@@ -95,4 +96,7 @@ void SideBar::buildCats(){
     addNode("simple", "Binary Threshold");
     addNode("simple", "RGB Mask");
     addNode("simple", "Hist Eq");
+    addNode("simple", "HSV Merge");
+    addNode("simple", "RGB Merge");
+    addNode("simple", "Diff Highlight");
 }

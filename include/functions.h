@@ -61,3 +61,21 @@ void HistEq(
     cv::Mat** output_images,
     void** params
 );
+
+void HSVMerge(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+);
+
+void RGBMerge(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+);
+
+void ChangeHL(
+    cv::Mat** input_images,
+    cv::Mat** output_images,
+    void** params
+);

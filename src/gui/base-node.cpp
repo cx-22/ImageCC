@@ -21,6 +21,14 @@ public:
         return NodeDataType{ "image", "Image" };
     }
 
+    connect(
+        this,
+        &BaseNode::videoFrameUpdated,
+        this,
+        &BaseNode::updateVideoFrame,
+        Qt::QueuedConnection
+    );
+
     cv::Mat* image;
 };
 
@@ -32,6 +40,7 @@ BaseNode::BaseNode(){
 
     //nid = - 4;
 	status = EMPTY;
+    video_status.store(NO_VIDEO);
 }
 
 void BaseNode::initialize(){
@@ -52,7 +61,7 @@ void BaseNode::initialize(){
     for (i = 0; i < func->n_outputs; i++){
         QLabel* label = new QLabel();
         label->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-        label->setMinimumSize(200, 200);
+        label->setMinimumSize(100, 100);
         labels.push_back(label);
         label->installEventFilter(this);
         main_layout->addWidget(label);
@@ -127,7 +136,7 @@ bool BaseNode::eventFilter(QObject* object, QEvent* event)
     }
 
 
-    if (type == INPUT){
+    if (type == INPUT && !video){
         if (object == labels[0]){
             int w = labels[0]->width();
             int h = labels[0]->height();
@@ -144,7 +153,7 @@ bool BaseNode::eventFilter(QObject* object, QEvent* event)
                     nullptr,
                     tr("Open Image"),
                     QDir::homePath(),
-                    tr("Image Files (*.png *.jpg *.bmp)")
+                    tr("Image Files (*.png *.jpg *.jpeg *.svg *.ppm *.bmp)")
                 );
 
                 if (!fileName.isEmpty()){
@@ -179,7 +188,45 @@ bool BaseNode::eventFilter(QObject* object, QEvent* event)
         }
 
         return false;
-    }else{
+    } else if (type == INPUT && video){
+        int w = labels[0]->width();
+        int h = labels[0]->height();
+
+        if (event->type() == QEvent::MouseButtonPress) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+
+            // Ignore right click (handled above)
+            if (mouseEvent->button() == Qt::RightButton) {
+                return true;
+            }
+
+            QString fileName = QFileDialog::getOpenFileName(
+                nullptr,
+                tr("Open Video"),
+                QDir::homePath(),
+                tr("Video Files (*.mp4 *.avi *.mkv)")
+            );
+
+            if (!fileName.isEmpty()) {
+                cap.open(fileName.toStdString());
+                status = ACTIVE;
+                video_status.store(PLAYING);
+                future = QtConcurrent::run(&BaseNode::runVideo, this);
+            }
+            return true;
+        }
+        else if (event->type() == QEvent::Resize) {
+            if (!pixmaps.empty() && pixmaps[0] != nullptr) {
+                labels[0]->setPixmap(
+                    pixmaps[0]->scaled(
+                        w,
+                        h,
+                        Qt::KeepAspectRatio
+                    )
+                );
+            }
+        }
+    } else{
         if (event->type() != QEvent::Resize){
             return false;
         }
@@ -202,7 +249,34 @@ bool BaseNode::eventFilter(QObject* object, QEvent* event)
     }
 }
 
+void BaseNode::runVideo() {
+    int fps = cap.get(cv::CAP_PROP_FPS);
+    float pause = 1000.0 / static_cast<float>(fps);
 
+    while (video_status.load() == PLAYING) {
+        if (cap.read(rgb_dummy)) {
+            cv::cvtColor(rgb_dummy, *output_images[0], cv::COLOR_BGR2RGBA);
+            Q_EMIT videoFrameUpdated();
+            QThread::msleep(pause);
+        } else {
+            cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+        }
+
+    }
+}
+
+void BaseNode::updateVideoFrame(cv::Mat frame)
+{
+    matToPixmap(&frame, pixmaps[0]);
+
+    labels[0]->setPixmap(
+        pixmaps[0]->scaled(
+            labels[0]->width(),
+            labels[0]->height(),
+            Qt::KeepAspectRatio
+        )
+    );
+}
 
 void BaseNode::setInData(std::shared_ptr<NodeData> nodeData, PortIndex const index)
 {
@@ -283,4 +357,10 @@ void BaseNode::update()
     for (i = 0; i < func->n_outputs; i++) {
         Q_EMIT dataUpdated(i);
     }
+}
+
+BaseNode::~BaseNode() {
+    video_status.store(NO_VIDEO);
+    future.waitForFinished();
+    
 }
