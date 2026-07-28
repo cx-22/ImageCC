@@ -130,7 +130,7 @@ public:
         type = 4;
         title = "Quantize RGB";
         slider = new QSlider(Qt::Horizontal);
-        slider->setRange(1, 255);
+        slider->setRange(1, 256);
         slider->setValue(100);
         slider->connect(slider, &QSlider::valueChanged, [this](int value) {
             val = static_cast<uchar>(value);

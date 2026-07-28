@@ -54,6 +54,7 @@ void RGBMask(
     cv::Mat** input_images,
     cv::Mat** output_images,
     void** params
+<<<<<<< HEAD
 );
 
 void HistEq(
@@ -78,4 +79,6 @@ void ChangeHL(
     cv::Mat** input_images,
     cv::Mat** output_images,
     void** params
+=======
+>>>>>>> parent of d7f2c15 (add hist eq)
 );

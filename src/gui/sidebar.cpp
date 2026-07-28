@@ -95,8 +95,11 @@ void SideBar::buildCats(){
     addNode("simple", "HSV Split");
     addNode("simple", "Binary Threshold");
     addNode("simple", "RGB Mask");
+<<<<<<< HEAD
     addNode("simple", "Hist Eq");
     addNode("simple", "HSV Merge");
     addNode("simple", "RGB Merge");
     addNode("simple", "Diff Highlight");
+=======
+>>>>>>> parent of d7f2c15 (add hist eq)
 }

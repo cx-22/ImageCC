@@ -13,10 +13,13 @@ std::shared_ptr<NodeDelegateModelRegistry> build_reg(){
     reg->registerModel<HSVSplitNode>();
     reg->registerModel<BinaryThresNode>();
     reg->registerModel<RGBMaskNode>();
+<<<<<<< HEAD
     reg->registerModel<HistEqNode>();
     reg->registerModel<HSVMergeNode>();
     reg->registerModel<RGBMergeNode>();
     reg->registerModel<DiffHLNode>();
+=======
+>>>>>>> parent of d7f2c15 (add hist eq)
 
     return reg;
 }
@@ -32,8 +35,11 @@ std::map<std::string, int> g_name_func_map = {
     {"HSV Split", 6},
     {"Binary Threshold", 7},
     {"RGB Mask", 8},
+<<<<<<< HEAD
     {"Hist Eq", 9},
     {"HSV Merge", 10},
     {"RGB Merge", 11},
     {"Diff Highlight", 12},
+=======
+>>>>>>> parent of d7f2c15 (add hist eq)
 };

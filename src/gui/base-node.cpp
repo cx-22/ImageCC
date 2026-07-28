@@ -4,12 +4,15 @@
 #include <QtCore/QDir>
 #include <QtCore/QEvent>
 #include "image.h"
+#include <QtConcurrent/QtConcurrentRun>
 
 #include <QtWidgets/QFileDialog>
 #include <QMenu>
 #include <QClipboard>
 #include <QApplication>
 #include <QMouseEvent>
+#include <QMetaType>
+
 
 class ImageData : public NodeData
 {
@@ -21,14 +24,6 @@ public:
         return NodeDataType{ "image", "Image" };
     }
 
-    connect(
-        this,
-        &BaseNode::videoFrameUpdated,
-        this,
-        &BaseNode::updateVideoFrame,
-        Qt::QueuedConnection
-    );
-
     cv::Mat* image;
 };
 
@@ -37,6 +32,17 @@ BaseNode::BaseNode(){
     main_layout = new QVBoxLayout();
 
 	main_widget->setLayout(main_layout);
+
+
+    qRegisterMetaType<cv::Mat>("cv::Mat");
+
+    connect(
+        this,
+        &BaseNode::videoFrameUpdated,
+        this,
+        &BaseNode::updateVideoFrame,
+        Qt::QueuedConnection
+    );
 
     //nid = - 4;
 	status = EMPTY;
@@ -60,8 +66,14 @@ void BaseNode::initialize(){
     output_images.resize(func->n_outputs);
     for (i = 0; i < func->n_outputs; i++){
         QLabel* label = new QLabel();
-        label->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-        label->setMinimumSize(100, 100);
+
+        label->setAlignment(Qt::AlignCenter);
+        label->setMinimumSize(320, 240);
+        label->setSizePolicy(
+            QSizePolicy::Expanding,
+            QSizePolicy::Expanding
+        );
+
         labels.push_back(label);
         label->installEventFilter(this);
         main_layout->addWidget(label);
@@ -216,15 +228,7 @@ bool BaseNode::eventFilter(QObject* object, QEvent* event)
             return true;
         }
         else if (event->type() == QEvent::Resize) {
-            if (!pixmaps.empty() && pixmaps[0] != nullptr) {
-                labels[0]->setPixmap(
-                    pixmaps[0]->scaled(
-                        w,
-                        h,
-                        Qt::KeepAspectRatio
-                    )
-                );
-            }
+			return false;
         }
     } else{
         if (event->type() != QEvent::Resize){
@@ -253,27 +257,40 @@ void BaseNode::runVideo() {
     int fps = cap.get(cv::CAP_PROP_FPS);
     float pause = 1000.0 / static_cast<float>(fps);
 
-    while (video_status.load() == PLAYING) {
-        if (cap.read(rgb_dummy)) {
+    while (video_status.load() == PLAYING)
+    {
+        if (cap.read(rgb_dummy))
+        {
             cv::cvtColor(rgb_dummy, *output_images[0], cv::COLOR_BGR2RGBA);
-            Q_EMIT videoFrameUpdated();
-            QThread::msleep(pause);
-        } else {
-            cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-        }
 
+            //emit videoFrameUpdated(output_images[0]->clone());
+            Q_EMIT dataUpdated(0);
+
+            QThread::msleep(pause);
+        }
     }
 }
 
-void BaseNode::updateVideoFrame(cv::Mat frame)
+void BaseNode::updateVideoFrame(cv::Mat mat)
 {
-    matToPixmap(&frame, pixmaps[0]);
+    // 1. Convert OpenCV Mat (RGBA) to QImage correctly
+    // Use Format_RGBA8888 because cvtColor used COLOR_BGR2RGBA
+    QImage qimg(mat.data, mat.cols, mat.rows, mat.step, QImage::Format_RGBA8888);
 
+    // 2. ASSIGN the generated pixmap to pixmaps[0] (deep copy so raw mat data stays valid)
+    if (pixmaps[0]) {
+        *pixmaps[0] = QPixmap::fromImage(qimg.copy());
+    }
+    else {
+        pixmaps[0] = new QPixmap(QPixmap::fromImage(qimg.copy()));
+    }
+
+    // 3. Scale and set to label
     labels[0]->setPixmap(
         pixmaps[0]->scaled(
-            labels[0]->width(),
-            labels[0]->height(),
-            Qt::KeepAspectRatio
+            labels[0]->contentsRect().size(),
+            Qt::KeepAspectRatio,
+            Qt::SmoothTransformation
         )
     );
 }

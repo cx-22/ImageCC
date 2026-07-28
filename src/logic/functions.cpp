@@ -38,12 +38,15 @@ void buildFuncs(){
     func_list.emplace_back(function{ HSVSplit, 1, 3, 0 });
     func_list.emplace_back(function{ BinaryThres, 1, 1, 1 });
     func_list.emplace_back(function{ RGBMask, 2, 1, 0 });
+<<<<<<< HEAD
     func_list.emplace_back(function{ HistEq, 1, 1, 0 });
     func_list.emplace_back(function{ HSVMerge, 3, 1, 0 });
 
     //11-15
     func_list.emplace_back(function{ RGBMerge, 3, 1, 0 });
     func_list.emplace_back(function{ ChangeHL, 2, 1, 0 });
+=======
+>>>>>>> parent of d7f2c15 (add hist eq)
 }
 
 void killFuncs(){
@@ -222,10 +225,10 @@ void quantizeRGB(
     int c = 4;
 
     uchar val = (params[0] == NULL) ? 100 : *(uchar*)params[0];
-    uchar table[256];
+    int table[256];
     
     for (int i = 0; i < 256; i++) {
-        table[i] = static_cast<uchar>(val * (i / val));
+        table[i] = (uchar)(val * (i / val));
     }
 
     int idx = 0;
@@ -402,7 +405,6 @@ void BinaryThres(
     }
 }
 
-//TODO: give options for binary, inv binary, or smooth
 void RGBMask(
     cv::Mat** input_images,
     cv::Mat** output_images,
@@ -427,6 +429,7 @@ void RGBMask(
         }
         idx += 4;
     }
+<<<<<<< HEAD
 }
 
 
@@ -602,4 +605,6 @@ void ChangeHL(
     auto end = std::chrono::high_resolution_clock::now();
     double time = std::chrono::duration<double, std::milli>(end - start).count();
     std::cout << "Custom: " << time << " ms\n";
+=======
+>>>>>>> parent of d7f2c15 (add hist eq)
 }
